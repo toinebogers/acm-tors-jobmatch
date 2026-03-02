@@ -11,6 +11,12 @@ css: custom.css
 
 # Dataset
 
+This R Markdown notebook is companion to the ACM TORS article *Bla * and contains the data and scripts for the regression analysis of effectiveness of candidate recommender system for recruiters. If you use this data in your own analysis, please cite the original article as follows:
+
+> Kaya, M. & Bogers, T. (2026). Analyzing the Effects of a Human-in-the-Loop Candidate
+Recommendation Algorithm at Jobindex. ACM Transactions on Recommender Systems, ?(?), ?--?.
+
+
 ## Initialization
 
 We start by importing the relevant R packages, defining relevant directories and creating some helper functions for printed rounded numbers.
@@ -22,15 +28,13 @@ knitr::opts_chunk$set(echo = FALSE, message = FALSE)
 
 ```
 
-```{r init, echo=TRUE}
+```{r init, echo=TRUE, warning=FALSE}
 
 # Import relevant packages.
 library("glue")           # Easier string formatting
-library("gtsummary")
-library("broom")
-library("broom.helpers")
+library("gtsummary")      # Provides clear summary tables of regression models
 library("here")           # Easy shortcut for the root RStudio project dir
-library("skimr")          # Generate useful summaries of data frames and tibbles.
+library("skimr")          # Generate useful summaries of data frames and tibbles
 library("tidyverse")      # All useful tidyverse packages
 
 # Define the relevant directories.
@@ -57,19 +61,19 @@ The raw regression data can be found in `data/processed` as `raw-regression-data
 
 ```{r data_loading, echo=TRUE}
 
-raw_data <- read_tsv(glue("{processed_data_dir}/raw-regression-data.tsv"),
+regression_data <- read_tsv(glue("{processed_data_dir}/raw-regression-data.tsv"),
                      show_col_types = FALSE,
                      col_types = "ccccddddddddddddddddddddDcdddddddddddDdccdcccc")
 
-# skim(raw_data)
+# skim(regression_data)
 
 ```
 
-The raw regression dataset was generated from Jobindex' internal databases. It contains `r round0(nrow(raw_data))` rows and  `r ncol(raw_data)` columns. Using `skimr`, we can provide an overview of its contents:
+The raw regression dataset was generated from Jobindex' internal databases. It contains `r round0(nrow(regression_data))` rows and  `r ncol(regression_data)` columns. Using `skimr`, we can provide an overview of its contents:
 
 ```{r data_overview, echo=TRUE}
 
-skim(raw_data)
+skim(regression_data)
 
 ```
 
@@ -79,13 +83,13 @@ skim(raw_data)
 
 ### Recruiter expertise
 
-In addition to the `r ncol(raw_data)` variables, we created additional variables to, e.g., represent recruiter expertise. 
+In addition to the `r ncol(regression_data)` variables, we created additional variables to, e.g., represent recruiter expertise. 
 
 ```{r additional-vars-1a, echo=TRUE}
 
 # Bin the mean recruiter PRR scores. 
 # First determine what the quantiles are.
-quantiles <- raw_data %>% 
+quantiles <- regression_data %>% 
   select(recruiter_id, recruiter_prr) %>% 
   distinct() %>% 
   select(recruiter_prr) %>% 
@@ -95,7 +99,7 @@ quantile_25 <- quantiles[[1]]
 quantile_50 <- quantiles[[2]]
 quantile_75 <- quantiles[[3]]
 # Now add a column with bins.
-raw_data <- raw_data %>% 
+regression_data <- regression_data %>% 
   mutate(recruiter_prr_binned = ifelse(recruiter_prr < quantile_25, "low", NA),
          recruiter_prr_binned = ifelse(recruiter_prr >= quantile_75, "high", recruiter_prr_binned),
          recruiter_prr_binned = ifelse(recruiter_prr >= quantile_25 & recruiter_prr < quantile_75, "mid", recruiter_prr_binned)) %>% 
@@ -107,7 +111,7 @@ Show the data distribution over these bins:
 
 ```{r additional-vars-1b, echo=FALSE}
 
-tbl_summary(raw_data, include = c(recruiter_prr_binned)) %>% as_flex_table()
+tbl_summary(regression_data, include = c(recruiter_prr_binned)) %>% as_flex_table()
 
 ```
 
@@ -129,7 +133,7 @@ We also create a variable to bin the company size, according to the following ru
 #   Small firms: 10-49 employees.
 #   Medium-sized firms: 50-249 employees.
 #   Large firms: 250+ employees. 
-raw_data <- raw_data %>% 
+regression_data <- regression_data %>% 
   # Now assign the bins.
   mutate(job_company_size = ifelse(job_company_num_employees < 10, "micro", NA),
          job_company_size = ifelse(job_company_num_employees >= 10 & job_company_num_employees < 50, "small", job_company_size),
@@ -144,7 +148,7 @@ Show the data distribution over these bins:
 
 ```{r additional-vars-2b, echo=FALSE}
 
-tbl_summary(raw_data, include = c(job_company_size)) %>% as_flex_table()
+tbl_summary(regression_data, include = c(job_company_size)) %>% as_flex_table()
 
 ```
 
@@ -157,7 +161,7 @@ Finally, we also added a variable representing expertise in specific industry se
 ```{r additional-vars-4a, echo=TRUE}
 
 # Calculate the total number of jobs per recruiter.
-total_job_count <- raw_data %>% 
+total_job_count <- regression_data %>% 
   dplyr::select(job_id, recruiter_id) %>% 
   dplyr::count(recruiter_id) %>% 
   dplyr::rename(total = n)
@@ -165,7 +169,7 @@ total_job_count <- raw_data %>%
 # If a recruiter has a share at or above X% in a certain industry sector, mark
 # them as an expert.
 expert_percentage <- 5.0
-industry_expertise_per_recruiter <- raw_data %>% 
+industry_expertise_per_recruiter <- regression_data %>% 
   dplyr::count(recruiter_id, job_company_industry_value) %>% 
   dplyr::inner_join(., total_job_count, by = "recruiter_id") %>% 
   mutate(perc = n / total * 100) %>% 
@@ -173,7 +177,7 @@ industry_expertise_per_recruiter <- raw_data %>%
   mutate(recruiter_industry_expert = ifelse(perc >= expert_percentage, "yes", "no")) %>% 
   select(recruiter_id, job_company_industry_value, recruiter_industry_expert)
 # Now add these labels to the original data.
-raw_data <- inner_join(raw_data, industry_expertise_per_recruiter,
+regression_data <- inner_join(regression_data, industry_expertise_per_recruiter,
                        by = c("recruiter_id", "job_company_industry_value"))
 
 ```
@@ -182,7 +186,7 @@ raw_data <- inner_join(raw_data, industry_expertise_per_recruiter,
 
 ```{r additional-vars-4b, echo=FALSE}
 
-# tbl_summary(raw_data, include = c(recruiter_industry_expert)) %>% as_flex_table()
+# tbl_summary(regression_data, include = c(recruiter_industry_expert)) %>% as_flex_table()
 
 ```
 
@@ -192,7 +196,7 @@ raw_data <- inner_join(raw_data, industry_expertise_per_recruiter,
 
 <!-- Generated using https://www.tablesgenerator.com/markdown_tables -->
 
-The raw regression data contains the following `r ncol(raw_data)` variables:
+The raw regression data contains the following `r ncol(regression_data)` variables:
 
 | **Variable** | **Description** | **Variable type** |
 |---|---|---|
@@ -242,65 +246,49 @@ The raw regression data contains the following `r ncol(raw_data)` variables:
 
 # Regression analysis
 
+## Mixed-effects model
+
+In order to determine which factor(s) best predict the positive response rate, we constructed a two-level linear model (or mixed-effects model) with completed jobs (Level 1) nested within recruiters (Level 2). The outcome variable was the job-specific PRR score. The expectation was that a meaningful part of the differences in PRR scores could be explained by the differences between recruiters. We carefully added potential predictors in line with our research questions as both fixed and random effects only if they resulted in a significant decrease in BIC score. However, the Intra-Class Correlation (ICC) of the best-performing model was 0.020, which suggests that only 2% of the variance can explained by our grouping structure. This suggests that a mixed-effects model is not necessary due to the lack of variance at the higher level.
+
+
+
 ## Multi-variate regression model
 
-Similar to the mixed-effects model, we built up the linear model by checking for significantly lower BIC scores. The final model was generated as follows:
+We therefore instead estimated a one-level multiple-regression model, again by carefully adding potential predictors in line with our research questions only if they resulted in a significant decrease in BIC score.
 
 ```{r, echo=TRUE}
 
 linear_model_final <- lm(job_prr ~ job_rec_engagement + job_complexity + job_ui_change + 
                      recruiter_prr + job_complexity:job_ui_change +  
                      recruiter_industry_expert + job_all_cv_views, 
-                   data = raw_data, na.action = na.exclude)
+                   data = regression_data, na.action = na.exclude)
 ```
 
-
-```{r, echo=FALSE, warning=FALSE}
-
-# summary(linear_model_final)
-# broom::tidy(linear_model_final)
-# performance::model_performance(linear_model_final)
-
-BIC_linear_model_final <- performance::model_performance(linear_model_final) %>% 
-  broom::tidy() %>% 
-  dplyr::filter(column == "BIC") %>% 
-  dplyr::select(mean) %>% 
-  dplyr::pull()
-
-# Feed model to gt_summary
-
-# bind_cols(
-#   tidy(lm_model_final) %>%
-#     mutate(estimate = sprintf("%.4f", estimate),
-#            std.error = sprintf("%.4f", std.error),
-#            statistic = sprintf("%.3f", statistic),
-#            p.value = sprintf("%.3f", p.value)),
-#   confint(lm_model_final, level=0.95) %>% as_tibble() %>% dplyr::rename(low = `2.5 %`, high = `97.5 %`) %>% 
-#     mutate(confint = glue("[{sprintf('%.4f', low)}, {sprintf('%.4f', high)}]"))
-# ) %>% 
-#   mutate(latex_string = glue("&   {estimate}  & {std.error}  & {statistic} & {p.value}  & {confint} \\")) %>% 
-#   select(1, 9)
-
-```
-
-
-
-This model had a BIC value of `r round2(BIC_linear_model_final)`, which was significanty higher than ...
-
+The coefficients of this regression model are shown below:
 
 ```{r, echo=FALSE}
-tbl_regression(linear_model_final) %>% as_flex_table()
+tbl_regression(linear_model_final,
+               estimate_fun = label_style_number(digits = 3),    # for estimates/CIs
+               pvalue_fun = label_style_pvalue(digits = 3)) %>%  # for p-values) 
+   as_flex_table()
 
 ```
 
+The regression equation was significant ($F$(7, 36029) = 326.3, $p$ < .001) with the model explaining 6\% of the variance in PRR scores ($R^2$ = .059). 
 
 
 
-## Mixed-effects model
 
-A two-level linear model was estimated with job-specific PRR scores (Level 1, `job_prr`) nested within recruiters (Level 2, `recruiter_id`). The outcome variable was the job-specific PRR score, predicted by treatment group and time, with random intercepts for individuals and random slopes for time.
+The resulting multiple-regression model predicts PRR scores from the following predictors:
 
-We considered the following Level 1 variables:
+- Engagement with the recommendations (`job_rec_engagement`) was a significant predictor ($\beta$ = 0.0123, $p$ < .001) as checking the recommendations significantly increases PRR for a job.
+- Job complexity (`job_complexity`) was a significant predictor ($\beta$ = -0.0079, $p$ < .001) as standard jobs have significantly lower PRR than complex jobs.
+- The mean PRR score achieved by the recruiter (`recruiter_prr`) in question was a significant predictor ($\beta$ = 1.0011, $p$ < .001). This variable is a proxy for recruiter expertise and higher mean PRR scores translate into higher PRR scores for individual jobs.    
+- Recruiters typically have a set of industry sectors that they are specialized in. We define all sectors that make up 5% or more of a recruiter's work as one of their specializations and flagged this for each job as a binary variable. This predictor (`recruiter_industry_expert`) was a significant predictor ($\beta$ = -0.0047, $p$ < .001). Perhaps counterintuitively, jobs from industry sectors that a recruiter specialized in resulted in lower PRR scores. 
+- The number of candidate CVs that the recruiter viewed for a job (`job_all_cv_views`) was a significant predictor ($\beta$ = $2.1 \cdot 10^{-5}$, $p$ < .001). Viewing more CVs results in higher PRR scores although the effect is very small.
+- Whether a job was completed before or after the UI change (`job_ui_change`) was not a significant predictor ($\beta$ = 0.0006, $p$ < .249), even though removing this predictor from the model reduced model fit significantly. 
+- The interaction between job complexity (`job_complexity`) and the timing of the UI change (`job_ui_change`) was a significant predictor ($\beta$ = -0.0189, $p$ < .001). In particular, it shows that standard jobs achieve significantly lower PRR rates before the UI change than the other combinations. We believe this is because after the UI change there was a bigger share of standard jobs  being checked, resulting in a bigger overall PRR increase for standard jobs compared to before.
+
 
 | b | a |
 |---|---|
@@ -317,8 +305,4 @@ We considered the following Level 1 variables:
 | recruiter_prr_binned        | Binned version of 'recruiter_prr' (fixed no. of levels, so fixed effect) |
 | recruiter_months_experience | No. of months this recruiter has been working (until end of dataset) |
 | recruiter_exp_binned        | Binned version of 'recruiter_months_experience' (fixed no. of levels, so fixed effect) |
-
-We constructed the 
-
-Explain that we build the model iteratively starting with x and x, adding predictors if they increased the BIC score significantly according to an ANOVA comparison. If predictors became insignificant later on, we removed them if the model fit improved. We tried different interaction effects, but only one 'worked'. We added all fixed effects as random effects, but only in three cases did this improve the model fit. The following predictors did not improve model fit at all: 
 
