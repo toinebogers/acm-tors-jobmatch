@@ -37,10 +37,6 @@ library("here")           # Easy shortcut for the root RStudio project dir
 library("skimr")          # Generate useful summaries of data frames and tibbles
 library("tidyverse")      # All useful tidyverse packages
 
-# Define the relevant directories.
-base_dir <- here()
-processed_data_dir <- glue("{base_dir}/data/processed")
-
 # Helper functions for properly formatting/rounding numbers.
 round0 <- function(number) {
   return(scales::label_comma(accuracy = NULL)(number))
@@ -57,15 +53,13 @@ round2 <- function(number) {
 
 ## Descriptive overview
 
-The raw regression data can be found in `data/processed` as `raw-regression-data.tsv`. Let's read this in first:
+The raw regression data can be found in `raw-regression-data.tsv`. Let's read this in first:
 
 ```{r data_loading, echo=TRUE}
 
-regression_data <- read_tsv(glue("{processed_data_dir}/raw-regression-data.tsv"),
+regression_data <- read_tsv("raw-regression-data.tsv",
                      show_col_types = FALSE,
                      col_types = "ccccddddddddddddddddddddDcdddddddddddDdccdcccc")
-
-# skim(regression_data)
 
 ```
 
@@ -83,7 +77,7 @@ skim(regression_data)
 
 ### Recruiter expertise
 
-In addition to the `r ncol(regression_data)` variables, we created additional variables to, e.g., represent recruiter expertise. 
+In addition to the `r ncol(regression_data)` variables, we created additional variables to, e.g., represent recruiter expertise in different bins (`recruiter_prr_binned`). 
 
 ```{r additional-vars-1a, echo=TRUE}
 
@@ -119,7 +113,7 @@ tbl_summary(regression_data, include = c(recruiter_prr_binned)) %>% as_flex_tabl
 
 ### Company size
 
-We also create a variable to bin the company size, according to the following rules:
+We also create a variable to bin the company size (`job_company_size`), according to the following rules:
 
 - Micro-enterprises: 0-9 employees
 - Small firms: 10-49 employees
@@ -156,7 +150,7 @@ tbl_summary(regression_data, include = c(job_company_size)) %>% as_flex_table()
 
 ### Industry expertise
 
-Finally, we also added a variable representing expertise in specific industry sectors. If 5% or more of a recruiter's total jobs are in an industry sector, we consider them an expert in that sector. Each job is classified as `yes` if they are an expert in that job's industry sector and `no` otherwise.
+Finally, we also added a variable representing expertise in specific industry sectors (`recruiter_industry_expert`). If 5% or more of a recruiter's total jobs are in an industry sector, we consider them an expert in that sector. Each job is classified as `yes` if they are an expert in that job's industry sector and `no` otherwise.
 
 ```{r additional-vars-4a, echo=TRUE}
 
@@ -200,49 +194,54 @@ The raw regression data contains the following `r ncol(regression_data)` variabl
 
 | **Variable** | **Description** | **Variable type** |
 |---|---|---|
-| `job_id` |        Unique identifier for each job. This dataset has one row per job ID. | Nominal |
-| `recruiter_id` | Unique identifier for each   recruiter. While multiple recruiters on a single job are possible,   recruitment is not a collaborative task at Jobindex and as a result the   dataset contains only jobs with a single recruiter. | Nominal |
-| `job_complexity` | The complexity of the job as   determined by an experienced recruiter upon addition to the job queue at   Jobindex. | Nominal (‘standard’   vs. ‘complex’) |
-| `job_rec_engagement` | Did the recruiter engage with   the recommendations (‘check’) or not (‘skip’)? | Nominal (‘check’   vs. ‘skip’) |
-| `job_num_queries` | Number of queries issued for   this job | Ratio |
-| `job_num_contacted_in_recs` | Number of candidates contacted   from the list of recommendations | Ratio |
-| `job_contacted_count` | Number of candidates contacted   in the entire session | Ratio |
-| `job_positive_count` | Number of contacted candidates   who responded positively | Ratio |
-| `job_prr` | Positive response rate (positive   responses / all contact candidates) | Ratio |
-| `job_negative_count` | Number of contacted candidates   who responded negatively | Ratio |
-| `job_nrr` | Negative response rate (negative   responses / all contact candidates) | Ratio |
-| `job_all_cv_views` | Number of CVs viewed in the   entire session | Ratio |
-| `job_rec_cv_views` | Number of CVs viewed from the   recommendation list | Ratio |
-| `job_non_rec_cv_views` | Number of CVs viewed during the   manual searches | Ratio |
-| `job_rec_cv_adds` | Number of CVs   shortlisted/contacted from the recommendation list | Ratio |
-| `job_non_rec_cv_adds` | Number of CVs   shortlisted/contacted in the entire session | Ratio |
-| `job_all_cv_adds` | Number of CVs   shortlisted/contacted during the manual searches | Ratio |
-| `job_rec_cv_clicks` | Number of CVs clicked from the   recommendation list | Ratio |
-| `job_all_cv_clicks` | Number of CVs clicked in the   entire session | Ratio |
-| `job_non_rec_cv_clicks` | Number of CVs clicked during the   manual searches | Ratio |
+| `job_id` | Unique identifier for each job. This dataset has one row per job ID. | Nominal |
+| `recruiter_id` | Unique identifier for each recruiter. While multiple recruiters on a single job are possible, recruitment is not a collaborative task at Jobindex and as a result the dataset contains only jobs with a single recruiter. | Nominal |
+| `job_complexity` | The complexity of the job as determined by an experienced recruiter upon addition to the job queue at Jobindex. | Nominal (‘standard’ vs. ‘complex’) |
+| `job_rec_engagement` | Did the recruiter engage with the recommendations (‘check’) or not  |(‘skip’)? | Nominal (‘check’ vs. ‘skip’) |
+| `job_num_queries` | Number of queries issued for this job | Ratio |
+| `job_num_contacted_in_recs` | Number of candidates contacted from the list of recommendations | Ratio |
+| `job_contacted_count` | Number of candidates contacted in the entire session | Ratio |
+| `job_positive_count` | Number of contacted candidates who responded positively | Ratio |
+| `job_prr` | Positive response rate (positive responses / all contact candidates) | Ratio |
+| `job_negative_count` | Number of contacted candidates who responded negatively | Ratio |
+| `job_nrr` | Negative response rate (negative responses / all contact candidates) | Ratio |
+| `job_all_cv_views` | Number of CVs viewed in the entire session | Ratio |
+| `job_rec_cv_views` | Number of CVs viewed from the recommendation list | Ratio |
+| `job_non_rec_cv_views` | Number of CVs viewed during the manual searches | Ratio |
+| `job_rec_cv_adds` | Number of CVs shortlisted/contacted from the recommendation list | Ratio |
+| `job_non_rec_cv_adds` | Number of CVs shortlisted/contacted in the entire session | Ratio |
+| `job_all_cv_adds` | Number of CVs shortlisted/contacted during the manual searches | Ratio |
+| `job_rec_cv_clicks` | Number of CVs clicked from the recommendation list | Ratio |
+| `job_all_cv_clicks` | Number of CVs clicked in the entire session | Ratio |
+| `job_non_rec_cv_clicks` | Number of CVs clicked during the manual searches | Ratio |
 | `job_contacted_in_recs` | ? | Ratio |
 | `job_contacted_from_recs` | ? | Ratio |
 | `job_pos_from_recs` | ? | Ratio |
 | `job_pos_in_recs` | ? | Ratio |
-| `job_month` | The month in which the job was   processed (recorded as the first day of that month) | Date |
-| `job_ui_change` | Was this job published before   ('Before') or after ('After') the UI change? | Nominal (‘Before’   vs. ‘After’) |
+| `job_month` | The month in which the job was processed (recorded as the first day of that month) | Date |
+| `job_ui_change` | Was this job published before ('Before') or after ('After') the UI change? | Nominal (‘Before’ vs. ‘After’) |
+| `recruiter_view_percentage` | Mean % of jobs this recruiter views the recommendations for | Ratio |
+| `recruiter_how_many` | ? | Ratio |
+| `recruiter_how_many_view` | ? | Ratio |
+| `recruiter_how_many_skip` | ? | Ratio |
+| `recruiter_view_prr` | ? | Ratio |
+| `recruiter_skip_prr` | ? | Ratio |
+| `recruiter_prr_gain` | ? | Ratio |
+| `recruiter_prr` | Mean PRR for this recruiter on this job | Ratio |
+| `recruiter_nrr` | Mean NRR for the recruiter on this job | Ratio |
+| `recruiter_view_nrr` | ? | Ratio |
+| `recruiter_skip_nrr` | ? | Ratio |
+| `recruiter_startdate` | Starting date of the recruiter on this job | Date |
+| `recruiter_months_experience` | No. of months this recruiter has been working (until end of dataset) | Ratio |
+| `job_company_industry_value` | Industry sector of the company offering the job | Nominal |
+| `job_company_name` | Name of the company offering the job | Nominal |
+| `job_company_num_employees` | Size of the company offering the job | Ratio |
+| `recruiter_prr_binned` | Binned version of 'recruiter_prr' | Ordinal (‘low’, 'medium', 'high') |
+| `recruiter_exp_binned` | Binned version of 'recruiter_months_experience' | Ordinal (‘low’, 'medium', 'high') |
+| `job_company_size` | Binned size of the company offering the job | Ordinal (‘micro’, 'small' 'medium', 'large') |
+| `recruiter_industry_expert` | If 5% or more of a recruiter's total jobs are in an industry sector, we consider them an expert in that sector. Each job is classified as `yes` if they are an expert in that job's industry sector and `no` otherwise. | Nominal ('yes' vs. 'no') |
 
 
-<!-- #  * job_complexity                How complex is the job? ('complex' vs. 'standard') -->
-<!-- #  * job_rec_engagement            Engagement with recommendations? ('view' vs. 'skip') -->
-<!-- #  * job_ui_change                 Was this before/after the UI change? ('Before' vs. 'After') -->
-<!-- # -->
-<!-- #  * job_num_queries               How actively did they search? -->
-<!-- #  * job_all_cv_views              How many CVs did they view? -->
-<!-- #  * job_contacted_count           How many did they contact? -->
-<!-- #  * job_company_industry_value    Industry sector of the job -->
-<!-- #  * job_company_name              Company of the job (potential random effect?) -->
-<!-- # -->
-<!-- #  * recruiter_view_percentage     Mean % of jobs this recruiter views the recs for -->
-<!-- #  * recruiter_prr                 Mean PRR for this recruiter -->
-<!-- #  * recruiter_prr_binned          Binned version of 'recruiter_prr' (fixed no. of levels, so fixed effect) -->
-<!-- #  * recruiter_months_experience   No. of months this recruiter has been working (until end of dataset) -->
-<!-- #  * recruiter_exp_binned          Binned version of 'recruiter_months_experience' (fixed no. of levels, so fixed effect) -->
 
 # Regression analysis
 
@@ -288,21 +287,3 @@ The resulting multiple-regression model predicts PRR scores from the following p
 - The number of candidate CVs that the recruiter viewed for a job (`job_all_cv_views`) was a significant predictor ($\beta$ = $2.1 \cdot 10^{-5}$, $p$ < .001). Viewing more CVs results in higher PRR scores although the effect is very small.
 - Whether a job was completed before or after the UI change (`job_ui_change`) was not a significant predictor ($\beta$ = 0.0006, $p$ < .249), even though removing this predictor from the model reduced model fit significantly. 
 - The interaction between job complexity (`job_complexity`) and the timing of the UI change (`job_ui_change`) was a significant predictor ($\beta$ = -0.0189, $p$ < .001). In particular, it shows that standard jobs achieve significantly lower PRR rates before the UI change than the other combinations. We believe this is because after the UI change there was a bigger share of standard jobs  being checked, resulting in a bigger overall PRR increase for standard jobs compared to before.
-
-
-| b | a |
-|---|---|
-| job_complexity              | How complex is the job? ('complex' vs. 'standard') |
-| job_rec_engagement          | Engagement with recommendations? ('view' vs. 'skip') |
-| job_ui_change               | Was this before/after the UI change? ('Before' vs. 'After') |
-| job_num_queries             | How actively did they search? |
-| job_all_cv_views            | How many CVs did they view? |
-| job_contacted_count         | How many did they contact? |
-| job_company_industry_value  | Industry sector of the job |
-| job_company_name            | Company of the job (potential random effect?) |
-| recruiter_view_percentage   | Mean % of jobs this recruiter views the recs for |
-| recruiter_prr               | Mean PRR for this recruiter |
-| recruiter_prr_binned        | Binned version of 'recruiter_prr' (fixed no. of levels, so fixed effect) |
-| recruiter_months_experience | No. of months this recruiter has been working (until end of dataset) |
-| recruiter_exp_binned        | Binned version of 'recruiter_months_experience' (fixed no. of levels, so fixed effect) |
-
