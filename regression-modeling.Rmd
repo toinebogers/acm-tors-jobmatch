@@ -208,29 +208,29 @@ The raw regression data contains the following `r ncol(regression_data)` variabl
 | `job_all_cv_views` | Number of CVs viewed in the entire session | Ratio |
 | `job_rec_cv_views` | Number of CVs viewed from the recommendation list | Ratio |
 | `job_non_rec_cv_views` | Number of CVs viewed during the manual searches | Ratio |
-| `job_rec_cv_adds` | Number of CVs shortlisted/contacted from the recommendation list | Ratio |
-| `job_non_rec_cv_adds` | Number of CVs shortlisted/contacted in the entire session | Ratio |
-| `job_all_cv_adds` | Number of CVs shortlisted/contacted during the manual searches | Ratio |
+| `job_rec_cv_adds` | Number of CVs shortlisted from the recommendation list | Ratio |
+| `job_non_rec_cv_adds` | Number of CVs shortlisted during the manual searches | Ratio |
+| `job_all_cv_adds` | Number of CVs shortlisted in the entire session | Ratio |
 | `job_rec_cv_clicks` | Number of CVs clicked from the recommendation list | Ratio |
 | `job_all_cv_clicks` | Number of CVs clicked in the entire session | Ratio |
 | `job_non_rec_cv_clicks` | Number of CVs clicked during the manual searches | Ratio |
-| `job_contacted_in_recs` | ? | Ratio |
-| `job_contacted_from_recs` | ? | Ratio |
-| `job_pos_from_recs` | ? | Ratio |
-| `job_pos_in_recs` | ? | Ratio |
+| `job_contacted_in_recs` | Number of contacted candidates present in the recommendation list | Ratio |
+| `job_contacted_from_recs` | Number of CVs contacted from the recommendation list | Ratio |
+| `job_pos_from_recs` | Number of positively responding candidates selected from the recommendation list | Ratio |
+| `job_pos_in_recs` | Number of positively responding candidates present in the recommendation list | Ratio |
 | `job_month` | The month in which the job was processed (recorded as the first day of that month) | Date |
 | `job_ui_change` | Was this job published before ('Before') or after ('After') the UI change? | Nominal (‘Before’ vs. ‘After’) |
 | `recruiter_view_percentage` | Mean % of jobs this recruiter views the recommendations for | Ratio |
-| `recruiter_how_many` | ? | Ratio |
-| `recruiter_how_many_view` | ? | Ratio |
-| `recruiter_how_many_skip` | ? | Ratio |
-| `recruiter_view_prr` | ? | Ratio |
-| `recruiter_skip_prr` | ? | Ratio |
-| `recruiter_prr_gain` | ? | Ratio |
+| `recruiter_how_many` | Total number of jobs for this recruiter | Ratio |
+| `recruiter_how_many_view` | Number of jobs for this recruiter in CHECK category | Ratio |
+| `recruiter_how_many_skip` | Number of jobs for this recruiter in SKIP category | Ratio |
+| `recruiter_view_prr` | Mean PRR of this recruiter on CHECK jobs | Ratio |
+| `recruiter_skip_prr` | Mean PRR of this recruiter on SKIP jobs | Ratio |
+| `recruiter_prr_gain` | Difference between Mean PRR on CHECK jobs and SKIP jobs for this recruiter | Ratio |
 | `recruiter_prr` | Mean PRR for this recruiter on this job | Ratio |
 | `recruiter_nrr` | Mean NRR for the recruiter on this job | Ratio |
-| `recruiter_view_nrr` | ? | Ratio |
-| `recruiter_skip_nrr` | ? | Ratio |
+| `recruiter_view_nrr` | Mean NRR of this recruiter on CHECK jobs  | Ratio |
+| `recruiter_skip_nrr` | Mean NRR of this recruiter on SKIP jobs | Ratio |
 | `recruiter_startdate` | Starting date of the recruiter on this job | Date |
 | `recruiter_months_experience` | No. of months this recruiter has been working (until end of dataset) | Ratio |
 | `job_company_industry_value` | Industry sector of the company offering the job | Nominal |
