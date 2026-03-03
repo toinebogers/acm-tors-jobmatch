@@ -57,7 +57,7 @@ The raw regression data can be found in `raw-regression-data.tsv`. Let's read th
 
 ```{r data_loading, echo=TRUE}
 
-regression_data <- read_tsv("raw-regression-data.tsv",
+regression_data <- read_tsv("regression-data.tsv",
                      show_col_types = FALSE,
                      col_types = "ccccddddddddddddddddddddDcdddddddddddDdccdcccc")
 
